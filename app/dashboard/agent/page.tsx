@@ -6,6 +6,7 @@ export default function DashboardAgentPage() {
   const [prompt, setPrompt] = useState('');
   const [output, setOutput] = useState('System ready. Enter an operational directive or select a preset query below.');
   const [loading, setLoading] = useState(false);
+  const [isChaosActive, setIsChaosActive] = useState(false);
 
   const runAgent = async (queryText: string) => {
     setLoading(true);
@@ -26,7 +27,15 @@ export default function DashboardAgentPage() {
       setOutput(`Error: ${err.message || 'Failed to connect to agent reasoning bus.'}`);
     } finally {
       setLoading(false);
+      setIsChaosActive(false);
     }
+  };
+
+  const handleChaosInjection = () => {
+    setIsChaosActive(true);
+    const chaosPrompt = "EMERGENCY ALERT: Node-04 VRAM spiked to 98.4% (89°C thermal threshold exceeded) due to runaway OpenVDB volumetric cache allocation. Execute immediate diagnostic sweep, invoke `CineOps-MemAgent::PurgeStaleCaches()`, and restore cluster safety metrics.";
+    setPrompt(chaosPrompt);
+    runAgent(chaosPrompt);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,14 +50,12 @@ export default function DashboardAgentPage() {
     { agent: 'AutonomousBalancer', time: '14:24:45', message: 'Migrated active Maya composition frame queue to stabilize cluster load distribution', code: 'LOG-9007', status: 'SUCCESS' },
     { agent: 'VAMOptimizer', time: '14:21:22', message: 'Auto-flushed GPU cache to prevent out of memory exception during 16K texture stream', code: 'LOG-9006', status: 'SUCCESS' },
     { agent: 'CorridorGuardian-AI', time: '14:22:20', message: 'Edge AI camera module verified zero physical perimeter security breaches', code: 'LOG-9005', status: 'SUCCESS' },
-    { agent: 'ThermalSentinel', time: '14:29:45', message: 'Optimized liquid cooling parameters across render cluster', code: 'LOG-9002', status: 'SUCCESS' },
-    { agent: 'CorridorGuardian-AI', time: '14:29:30', message: 'Autonomous boundary anomaly detected and neutralized', code: 'LOG-9001', status: 'SUCCESS' },
   ];
 
   return (
     <div className="space-y-8 text-gray-200 pb-12">
       
-      {/* Header */}
+      {/* Header with Chaos Button */}
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-800 pb-4 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-amber-500 flex items-center gap-2">
@@ -58,11 +65,33 @@ export default function DashboardAgentPage() {
             Live multi-agent reasoning console and automated cluster telemetry logs.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-[#121620] px-3 py-1.5 rounded-lg border border-gray-800 text-xs text-emerald-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Live Stream Connected
+        
+        <div className="flex items-center gap-3">
+          {/* Chaos Injection Button */}
+          <button
+            onClick={handleChaosInjection}
+            disabled={loading}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-red-600/20 flex items-center gap-2 border border-red-500 animate-pulse disabled:opacity-50"
+          >
+            <span>⚡</span> Inject Chaos (Simulate Overheat)
+          </button>
+
+          <div className="flex items-center gap-2 bg-[#121620] px-3 py-2 rounded-lg border border-gray-800 text-xs text-emerald-400">
+            <span className={`w-2 h-2 rounded-full ${isChaosActive ? 'bg-red-500 animate-ping' : 'bg-emerald-500 animate-pulse'}`}></span>
+            {isChaosActive ? 'Chaos Mode Active' : 'Live Stream Connected'}
+          </div>
         </div>
       </div>
+
+      {/* Chaos Alert Banner (Conditional) */}
+      {isChaosActive && (
+        <div className="bg-red-950/40 border border-red-600/50 rounded-xl p-4 flex items-center gap-3 text-red-300 text-sm animate-pulse">
+          <span className="text-xl">🚨</span>
+          <div>
+            <strong className="font-semibold">CRITICAL ALERT:</strong> Artificial thermal spike & VRAM saturation injected into Node-04. Awaiting Gemini agent mitigation stream...
+          </div>
+        </div>
+      )}
 
       {/* Gemini Interactive Console Section */}
       <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-6 space-y-6 shadow-xl backdrop-blur-sm">
