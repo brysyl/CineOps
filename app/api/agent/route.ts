@@ -1,11 +1,15 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextResponse } from 'next/server';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export async function POST(req: Request) {
   try {
     const { prompt } = await req.json();
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({ error: 'GEMINI_API_KEY is missing from environment variables.' }, { status: 500 });
+    }
+
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -13,8 +17,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ result: response.text });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gemini Agent Error:', error);
-    return NextResponse.json({ error: 'Agent reasoning stream interrupted.' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Agent reasoning stream interrupted.' }, { status: 500 });
   }
 }
