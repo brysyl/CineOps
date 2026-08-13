@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from 'next/navigation';
 import { usePathname } from 'next/navigation';
 import React from 'react';
 
@@ -19,9 +19,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="w-full md:w-64 bg-[#0b0e14] border-r border-[#262f3f] p-6 flex flex-col justify-between shrink-0">
         <div className="space-y-8">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center font-bold text-gray-950 text-sm">
-              ⚡
-            </div>
+            {/* Unified Custom Logo */}
+            <svg className="w-9 h-9 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="8" fill="#121722" stroke="#262f3f" strokeWidth="1" />
+              {/* Golden 'C' Shape */}
+              <path d="M 21 9 C 15 9 11 12 11 16 C 11 20 15 23 21 23" stroke="#f59e0b" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+              {/* Blue Right Arrow */}
+              <path d="M 16 16 H 24 M 21 13 L 24 16 L 21 19" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
             <div>
               <h1 className="text-sm font-bold text-gray-100 tracking-wide">CineOps AI</h1>
               <p className="text-[10px] text-gray-400">AUTONOMOUS CONTROL ROOM</p>
