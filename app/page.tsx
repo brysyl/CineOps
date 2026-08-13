@@ -1,30 +1,184 @@
-'use client';
-
 import Link from 'next/link';
-import { ArrowUpRight, Bot, CircleCheck, Cpu, Gauge, Play, Radar, ShieldCheck, Sparkles, Terminal } from 'lucide-react';
+import React from 'react';
 
-const signals = ['GPU VRAM leaks', 'Render worker failures', 'Asset dependency drift', 'Thermal throttling'];
-
-export default function Home() {
+export default function LandingPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#080d17]">
-      <div className="absolute inset-0 grid-fade opacity-40" />
-      <div className="absolute -left-40 top-0 h-[520px] w-[520px] rounded-full bg-amber-400/10 blur-[130px]" />
-      <div className="absolute right-0 top-40 h-[460px] w-[460px] rounded-full bg-emerald-400/10 blur-[140px]" />
-      <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-        <Link href="/" className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-400 text-slate-950"><Radar size={21} /></span><span className="text-sm font-bold tracking-[.22em] text-white">CINEOPS <span className="text-amber-400">AI</span></span></Link>
-        <div className="hidden items-center gap-8 text-sm text-slate-400 md:flex"><a href="#signal" className="transition hover:text-white">Signal coverage</a><a href="#how" className="transition hover:text-white">How it works</a><Link href="/dashboard/incidents" className="transition hover:text-white">Audit trail</Link></div>
-        <Link href="/dashboard" className="flex items-center gap-2 rounded-full border border-slate-700 bg-slate-900/60 px-4 py-2 text-sm font-semibold text-white transition hover:border-amber-400/60 hover:bg-slate-800">Open control room <ArrowUpRight size={15} /></Link>
+    <div className="min-h-screen bg-[#07090e] text-gray-100 font-sans selection:bg-amber-500/30">
+      {/* Navbar */}
+      <nav className="flex items-center justify-between px-6 md:px-8 py-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center gap-3">
+          {/* New Unified Custom Logo */}
+          <svg className="w-8 h-8 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="#121722" stroke="#262f3f" strokeWidth="1" />
+            <path d="M 21 9 C 15 9 11 12 11 16 C 11 20 15 23 21 23" stroke="#f59e0b" strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            <path d="M 16 16 H 24 M 21 13 L 24 16 L 21 19" stroke="#38bdf8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+          <div className="font-bold tracking-widest text-sm flex gap-1">
+            <span>CINEOPS</span>
+            <span className="text-amber-500">AI</span>
+          </div>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-8 text-xs text-gray-400 font-medium">
+          <Link href="#" className="hover:text-gray-100 transition-colors">Signal coverage</Link>
+          <Link href="#" className="hover:text-gray-100 transition-colors">How it works</Link>
+          <Link href="#" className="hover:text-gray-100 transition-colors">Audit trail</Link>
+        </div>
+
+        <Link href="/dashboard" className="px-5 py-2.5 rounded-full border border-[#262f3f] bg-[#0b0e14] hover:bg-[#121722] text-xs font-semibold transition-colors flex items-center gap-2">
+          Open control room <span>↗</span>
+        </Link>
       </nav>
-      <section className="relative mx-auto grid max-w-7xl items-center gap-16 px-6 pb-24 pt-16 lg:grid-cols-[1.05fr_.95fr] lg:px-10 lg:pb-32 lg:pt-24">
-        <div className="animate-float-in"><div className="mb-7 inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold tracking-wide text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]" /> AUTONOMOUS SYSTEMS ONLINE</div><h1 className="max-w-3xl text-balance text-5xl font-bold leading-[1.04] tracking-[-.05em] text-white sm:text-6xl lg:text-8xl">Keep the frame <span className="text-amber-400">moving.</span></h1><p className="mt-7 max-w-xl text-lg leading-8 text-slate-400">CineOps AI turns noisy telemetry into decisive action for VFX render farms, LED volumes, and digital cinema pipelines. Diagnose. Remediate. Keep production on schedule.</p><div className="mt-9 flex flex-wrap items-center gap-4"><Link href="/dashboard" className="group flex items-center gap-3 rounded-lg bg-amber-400 px-5 py-3.5 font-bold text-slate-950 transition hover:bg-amber-300">Launch Studio Control Room <ArrowUpRight size={18} className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></Link><Link href="/dashboard/agent" className="flex items-center gap-3 rounded-lg border border-slate-700 px-5 py-3.5 font-semibold text-white transition hover:border-slate-500 hover:bg-slate-900"><Play size={16} className="fill-current text-emerald-400" /> Watch agent reasoning</Link></div><div className="mt-12 flex flex-wrap gap-x-7 gap-y-3 text-xs font-semibold uppercase tracking-[.15em] text-slate-500">{signals.map((signal) => <span key={signal} className="flex items-center gap-2"><CircleCheck size={14} className="text-emerald-400" />{signal}</span>)}</div></div>
-        <div className="relative animate-float-in [animation-delay:120ms]"><div className="glass relative overflow-hidden rounded-2xl p-4 shadow-2xl shadow-black/40"><div className="flex items-center justify-between border-b border-slate-800 px-3 pb-4"><div><p className="text-[10px] font-bold tracking-[.22em] text-slate-500">LIVE STUDIO TELEMETRY</p><p className="mt-1 text-sm font-semibold text-white">Virtual Production / Stage 03</p></div><span className="flex items-center gap-2 rounded-full bg-emerald-400/10 px-2.5 py-1 text-[10px] font-bold text-emerald-300"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> HEALTHY</span></div><div className="grid grid-cols-2 gap-3 p-3"><Metric icon={<Gauge size={16} />} label="GPU CLUSTER" value="78.4%" trend="+4.2%" /><Metric icon={<Cpu size={16} />} label="ACTIVE NODES" value="28 / 32" trend="87.5%" /><Metric icon={<Bot size={16} />} label="AGENT ACTIONS" value="1,284" trend="This week" /><Metric icon={<ShieldCheck size={16} />} label="DOWNTIME SAVED" value="$42.8k" trend="This month" /></div><div className="mt-1 rounded-xl border border-slate-800 bg-slate-950/70 p-4"><div className="mb-4 flex items-center justify-between"><p className="text-xs font-semibold text-slate-300">Frame render throughput</p><p className="font-mono text-xs text-emerald-300">+18.6%</p></div><div className="flex h-32 items-end gap-1.5">{[35,42,38,50,47,62,57,70,66,74,68,81,75,88,79,92,85,96,90,100,94,98].map((height, i) => <div key={i} className="flex-1 rounded-t-sm bg-gradient-to-t from-amber-400/20 to-amber-400" style={{ height: `${height}%`, opacity: .45 + i / 44 }} />)}</div><div className="mt-3 flex justify-between font-mono text-[10px] text-slate-600"><span>12:00</span><span>14:00</span><span>16:00</span><span>NOW</span></div></div></div><div className="absolute -bottom-5 -left-7 glass hidden items-center gap-3 rounded-xl px-4 py-3 shadow-xl sm:flex"><span className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-400/15 text-rose-300"><Terminal size={16} /></span><div><p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Last intervention</p><p className="text-xs font-semibold text-white">Node-04 remediated in 1.4s</p></div></div></div>
+
+      {/* Hero Section */}
+      <main className="max-w-7xl mx-auto px-6 md:px-8 pt-16 md:pt-20 pb-24 md:pb-32 flex flex-col xl:flex-row items-center gap-16 w-full">
+        {/* Left Content */}
+        <div className="flex-1 space-y-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/30 border border-emerald-900/50 text-[10px] font-bold text-emerald-400 tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            AUTONOMOUS SYSTEMS ONLINE
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-[1.05]">
+            Keep the <br /> frame <br /> <span className="text-amber-500">moving.</span>
+          </h1>
+          
+          <p className="text-gray-400 text-sm md:text-base max-w-md leading-relaxed">
+            CineOps AI turns noisy telemetry into decisive action for VFX render farms, LED volumes, and digital cinema pipelines. Diagnose. Remediate. Keep production on schedule.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+            <Link href="/dashboard" className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
+              Launch Studio Control Room <span>↗</span>
+            </Link>
+            <button className="w-full sm:w-auto px-8 py-3.5 rounded-lg border border-[#262f3f] bg-[#0b0e14] hover:bg-[#121722] text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+              <span className="text-emerald-500">▶</span> Watch agent reasoning
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 pt-6 text-[10px] font-bold tracking-wider text-gray-400 uppercase">
+            <div className="flex items-center gap-2"><span className="text-emerald-500 text-sm">✓</span> GPU VRAM LEAKS</div>
+            <div className="flex items-center gap-2"><span className="text-emerald-500 text-sm">✓</span> RENDER WORKER FAILURES</div>
+            <div className="flex items-center gap-2"><span className="text-emerald-500 text-sm">✓</span> ASSET DEPENDENCY DRIFT</div>
+            <div className="flex items-center gap-2"><span className="text-emerald-500 text-sm">✓</span> THERMAL THROTTLING</div>
+          </div>
+        </div>
+
+        {/* Right Content / Dashboard Mockup */}
+        <div className="flex-1 relative w-full max-w-lg lg:max-w-xl mx-auto">
+          <div className="bg-[#0b0e14] border border-[#262f3f] rounded-2xl p-6 md:p-8 shadow-2xl relative z-10">
+            <div className="flex justify-between items-start mb-8">
+              <div>
+                <p className="text-[10px] font-bold text-gray-500 tracking-wider uppercase mb-1">Live Studio Telemetry</p>
+                <h3 className="text-sm font-bold text-gray-200">Virtual Production / Stage 03</h3>
+              </div>
+              <div className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-bold border border-emerald-500/20 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> HEALTHY
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              <div className="bg-[#07090e] border border-[#262f3f] rounded-xl p-4">
+                <div className="flex justify-between items-center text-[10px] text-gray-500 font-bold mb-2">
+                   <span className="text-amber-500">⚡</span> <span className="text-emerald-400">+4.2%</span>
+                </div>
+                <div className="text-xl font-bold">78.4%</div>
+                <div className="text-[10px] text-gray-500 font-mono mt-1 uppercase">GPU CLUSTER</div>
+              </div>
+              <div className="bg-[#07090e] border border-[#262f3f] rounded-xl p-4">
+                <div className="flex justify-between items-center text-[10px] text-gray-500 font-bold mb-2">
+                   <span className="text-emerald-500">🖧</span> <span className="text-emerald-400">97.5%</span>
+                </div>
+                <div className="text-xl font-bold">28 / 32</div>
+                <div className="text-[10px] text-gray-500 font-mono mt-1 uppercase">ACTIVE NODES</div>
+              </div>
+              <div className="bg-[#07090e] border border-[#262f3f] rounded-xl p-4">
+                <div className="flex justify-between items-center text-[10px] text-gray-500 font-bold mb-2">
+                   <span className="text-amber-500">⚠️</span> <span className="text-emerald-400">This week</span>
+                </div>
+                <div className="text-xl font-bold">1,284</div>
+                <div className="text-[10px] text-gray-500 font-mono mt-1 uppercase">ALERT ACTIONS</div>
+              </div>
+              <div className="bg-[#07090e] border border-[#262f3f] rounded-xl p-4">
+                <div className="flex justify-between items-center text-[10px] text-gray-500 font-bold mb-2">
+                   <span className="text-emerald-500">💰</span> <span className="text-emerald-400">This month</span>
+                </div>
+                <div className="text-xl font-bold">$42.8k</div>
+                <div className="text-[10px] text-gray-500 font-mono mt-1 uppercase">DOWNTIME SAVED</div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-bold text-gray-400">Frame render throughput</span>
+                <span className="text-[10px] font-bold text-emerald-400">+18.6%</span>
+              </div>
+              <div className="flex items-end gap-1.5 h-24">
+                {[30, 45, 35, 50, 40, 60, 55, 70, 65, 80, 75, 90, 85, 100, 95, 85, 75, 80, 65, 50, 40].map((h, i) => (
+                  <div key={i} className="flex-1 bg-gradient-to-t from-amber-600 to-amber-400 rounded-t-sm opacity-90 hover:opacity-100 transition-opacity" style={{ height: `${h}%` }}></div>
+                ))}
+              </div>
+              <div className="flex justify-between text-[10px] text-gray-600 font-mono">
+                <span>12:00</span>
+                <span>14:00</span>
+                <span>16:00</span>
+                <span>NOW</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating Intervention Pill */}
+          <div className="absolute -bottom-5 -left-4 md:-left-8 z-20 bg-[#121722] border border-[#262f3f] rounded-lg p-3 shadow-2xl flex items-center gap-3">
+            <span className="text-blue-400 text-lg">↪</span>
+            <div>
+              <p className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">LAST INTERVENTION</p>
+              <p className="text-xs font-bold text-gray-200">Node-04 remediated in 1.4s</p>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* Features Section */}
+      <section className="bg-[#0b0e14] border-t border-[#262f3f]">
+        <div className="max-w-7xl mx-auto px-6 md:px-8 py-20 grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div>
+            <div className="w-10 h-10 rounded-lg bg-[#121722] border border-[#262f3f] flex items-center justify-center text-amber-500 mb-4 text-lg">
+              📊
+            </div>
+            <h4 className="text-sm font-bold text-gray-200 mb-2">See the signal</h4>
+            <p className="text-xs text-gray-400 leading-relaxed pr-4">
+              Unify Grafana metrics, Loki logs, and trace context into one operating picture.
+            </p>
+          </div>
+          <div>
+            <div className="w-10 h-10 rounded-lg bg-[#121722] border border-[#262f3f] flex items-center justify-center text-amber-500 mb-4 text-lg">
+              🧠
+            </div>
+            <h4 className="text-sm font-bold text-gray-200 mb-2">Think in context</h4>
+            <p className="text-xs text-gray-400 leading-relaxed pr-4">
+              Gemini Enterprise connects symptoms across workers, assets, engines, and stages.
+            </p>
+          </div>
+          <div>
+            <div className="w-10 h-10 rounded-lg bg-[#121722] border border-[#262f3f] flex items-center justify-center text-amber-500 mb-4 text-lg">
+              🛡️
+            </div>
+            <h4 className="text-sm font-bold text-gray-200 mb-2">Act without waiting</h4>
+            <p className="text-xs text-gray-400 leading-relaxed pr-4">
+              Execute safe, auditable remediation routines before a missed frame becomes a missed day.
+            </p>
+          </div>
+        </div>
       </section>
-      <section id="signal" className="relative border-y border-slate-800/70 bg-slate-950/40"><div className="mx-auto grid max-w-7xl gap-8 px-6 py-14 sm:grid-cols-3 lg:px-10"><Feature icon={<Sparkles />} title="See the signal" text="Unify Grafana metrics, Loki logs, and trace context into one operating picture." /><Feature icon={<Bot />} title="Think in context" text="Gemini Enterprise connects symptoms across workers, assets, engines, and stages." /><Feature icon={<ShieldCheck />} title="Act without waiting" text="Execute safe, auditable remediation routines before a missed frame becomes a missed day." /></div></section>
-      <footer className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between lg:px-10"><p>© 2025 CineOps AI. Autonomous telemetry for modern production.</p><p className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Systems nominal</p></footer>
-    </main>
+
+      {/* Footer */}
+      <footer className="bg-[#07090e] max-w-7xl mx-auto px-6 md:px-8 py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] text-gray-500 font-mono">
+        <div>© 2026 CineOps AI - Autonomous telemetry for modern production</div>
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          Systems nominal
+        </div>
+      </footer>
+    </div>
   );
 }
-
-function Metric({ icon, label, value, trend }: { icon: React.ReactNode; label: string; value: string; trend: string }) { return <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3"><div className="flex items-center justify-between text-slate-500"><span className="text-amber-400">{icon}</span><span className="text-[10px] text-emerald-400">{trend}</span></div><p className="mt-3 text-xl font-bold text-white">{value}</p><p className="mt-1 text-[9px] font-bold tracking-[.16em] text-slate-500">{label}</p></div>; }
-function Feature({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) { return <div className="flex gap-4"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-amber-400">{icon}</span><div><h2 className="font-semibold text-white">{title}</h2><p className="mt-1 text-sm leading-6 text-slate-500">{text}</p></div></div>; }
