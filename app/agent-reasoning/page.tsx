@@ -1,4 +1,6 @@
-'import React, { useState } from 'react';
+'use client';
+
+import React, { useState } from 'react';
 
 export default function AgentReasoningPage() {
   const [prompt, setPrompt] = useState('');
