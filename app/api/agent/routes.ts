@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const prompt = `You are CineOps AI, an autonomous observability agent for a VFX render farm. Analyze this alert and return strict JSON with keys incident (title, severity, node, cause, action, duration, saved) and steps (array of phase, detail, status). Alert: ${JSON.stringify(body.payload ?? body)}. Use concise production-safe remediation reasoning.`;
-  const response = await ai.models.generateContent({ model: 'gemini-2.5-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
+  const response = await ai.models.generateContent({ model: 'gemini-3.6-flash', contents: prompt, config: { responseMimeType: 'application/json' } });
   const text = response.text ?? JSON.stringify(simulation(anomaly));
   const result = JSON.parse(text) as ReturnType<typeof simulation>;
   if (supabaseAdmin && result.incident) await supabaseAdmin.from('cineops_incidents').insert({ ...result.incident });
