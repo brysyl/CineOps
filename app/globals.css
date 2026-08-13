@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 222 47% 6%;
+  --foreground: 210 40% 96%;
+  --card: 222 40% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 222 40% 9%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 43 96% 56%;
+  --primary-foreground: 222 47% 6%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 215 25% 65%;
+  --muted-foreground: 215 20% 58%;
+  --accent: 159 84% 44%;
+  --accent-foreground: 222 47% 6%;
+  --destructive: 0 78% 58%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 25% 19%;
+  --input: 217 25% 19%;
+  --ring: 43 96% 56%;
+  --radius: 0.75rem;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: #080d17;
+  color: #e7edf5;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+}
+::selection { background: rgba(251, 191, 36, .28); color: white; }
+
+@layer utilities {
+  .glass { background: rgba(15, 23, 42, .66); border: 1px solid rgba(148, 163, 184, .14); backdrop-filter: blur(18px); }
+  .grid-fade { background-image: linear-gradient(rgba(148,163,184,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,.055) 1px, transparent 1px); background-size: 48px 48px; }
+  .text-balance { text-wrap: balance; }
+}
+
+@keyframes pulse-line { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+@keyframes float-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.animate-pulse-line { animation: pulse-line 1.8s ease-in-out infinite; }
+.animate-float-in { animation: float-in .45s ease-out both; }
