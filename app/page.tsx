@@ -7,7 +7,7 @@ export default function LandingPage() {
       {/* Navbar */}
       <nav className="flex items-center justify-between px-6 md:px-8 py-6 max-w-7xl mx-auto w-full">
         <div className="flex items-center gap-3">
-          {/* New Unified Custom Logo */}
+          {/* Unified Custom Logo */}
           <svg className="w-8 h-8 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="32" height="32" rx="8" fill="#121722" stroke="#262f3f" strokeWidth="1" />
             <path d="M 21 9 C 15 9 11 12 11 16 C 11 20 15 23 21 23" stroke="#f59e0b" strokeWidth="3.5" strokeLinecap="round" fill="none" />
@@ -51,9 +51,10 @@ export default function LandingPage() {
             <Link href="/dashboard" className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
               Launch Studio Control Room <span>↗</span>
             </Link>
-            <button className="w-full sm:w-auto px-8 py-3.5 rounded-lg border border-[#262f3f] bg-[#0b0e14] hover:bg-[#121722] text-sm font-semibold transition-colors flex items-center justify-center gap-2">
+            {/* FIXED: Converted button to Link routing directly to diagnostics */}
+            <Link href="/dashboard/diagnostics" className="w-full sm:w-auto px-8 py-3.5 rounded-lg border border-[#262f3f] bg-[#0b0e14] hover:bg-[#121722] text-sm font-semibold transition-colors flex items-center justify-center gap-2">
               <span className="text-emerald-500">▶</span> Watch agent reasoning
-            </button>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 pt-6 text-[10px] font-bold tracking-wider text-gray-400 uppercase">
