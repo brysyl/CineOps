@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.0-flash',
       contents: `You are CineOps AI, an autonomous multi-agent studio control room and render cluster manager. Respond to the operator's query with technical authority, referencing nodes, thermal limits, and VRAM optimization: ${prompt}`,
     });
 
