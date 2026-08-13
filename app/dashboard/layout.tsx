@@ -1,7 +1,69 @@
+'use client';
+
+import React from 'react';
 import Link from 'next/link';
-import { Activity, Archive, Bot, LayoutDashboard, Radar, Settings } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-[#080d17] text-slate-100"><aside className="fixed inset-y-0 left-0 z-20 hidden w-64 border-r border-slate-800/80 bg-[#0a101c] px-5 py-6 lg:block"><Link href="/" className="mb-11 flex items-center gap-3 px-2"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-400 text-slate-950"><Radar size={20} /></span><span className="text-sm font-bold tracking-[.2em]">CINEOPS <span className="text-amber-400">AI</span></span></Link><p className="px-2 text-[10px] font-bold uppercase tracking-[.22em] text-slate-600">Operations</p><nav className="mt-4 space-y-1"><Nav href="/dashboard" icon={<LayoutDashboard size={17} />} label="Control room" /><Nav href="/dashboard/agent" icon={<Bot size={17} />} label="Agent reasoning" /><Nav href="/dashboard/incidents" icon={<Archive size={17} />} label="Incident history" /></nav><div className="absolute bottom-7 left-5 right-5 rounded-xl border border-slate-800 bg-slate-900/50 p-4"><div className="flex items-center gap-2 text-xs font-semibold text-emerald-300"><span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" /> All systems nominal</div><p className="mt-2 text-[11px] leading-5 text-slate-600">Telemetry stream connected<br />Last sync 14:32:21 UTC</p></div></aside><div className="lg:pl-64"><header className="flex h-16 items-center justify-between border-b border-slate-800/80 bg-[#0a101c]/90 px-6 backdrop-blur lg:px-9"><div><p className="text-[10px] font-bold uppercase tracking-[.24em] text-slate-600">CINEOPS / OPERATIONS</p><p className="mt-0.5 text-sm font-semibold text-white">Studio Control Room</p></div><div className="flex items-center gap-4"><div className="hidden items-center gap-2 text-xs text-slate-500 sm:flex"><Activity size={14} className="text-emerald-400" /> Live telemetry</div><button className="text-slate-500 transition hover:text-white"><Settings size={17} /></button><Link href="/" className="hidden text-xs font-semibold text-amber-400 sm:block">Exit room</Link></div></header><main className="p-5 sm:p-7 lg:p-9">{children}</main></div></div>;
+  const pathname = usePathname();
+
+  const navItems = [
+    { name: 'Studio Control Room', href: '/dashboard', icon: '🎛️' },
+    { name: 'Gemini Agent & Diagnostics', href: '/dashboard/agent', icon: '🤖' },
+    { name: '3D Cluster Topology', href: '/dashboard/topology', icon: '🌐' },
+    { name: 'Incident History', href: '/dashboard/incidents', icon: '📋' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#080a0f] text-gray-100 flex flex-col md:flex-row font-sans">
+      
+      {/* Sidebar */}
+      <aside className="w-full md:w-64 bg-[#0b0e14] border-b md:border-b-0 md:border-r border-gray-800 p-6 flex flex-col justify-between shrink-0">
+        <div className="space-y-8">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🤖⚔️</span>
+            <div>
+              <h1 className="font-bold tracking-tight text-amber-500 text-base">CINECOPS AI</h1>
+              <p className="text-[10px] text-gray-400 tracking-widest uppercase">Autonomous Control Room</p>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold px-3 mb-2">Operations</p>
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 shadow-sm'
+                      : 'text-gray-400 hover:bg-[#121620] hover:text-gray-200'
+                  }`}
+                >
+                  <span>{item.icon}</span>
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-gray-800/80 text-xs text-gray-500 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Telemetry stream connected</span>
+          </div>
+          <p className="text-[10px] text-gray-400">Last sync: 14:35:32 UTC</p>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+        {children}
+      </main>
+
+    </div>
+  );
 }
-function Nav({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) { return <Link href={href} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500 transition hover:bg-slate-800/70 hover:text-white">{icon}{label}</Link>; }
