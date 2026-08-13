@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 
 export default function DiagnosticsPage() {
-  const [directive, setDirective] = useState('Simulate failover protocol for RenderPipelineMaster.');
-  const [output, setOutput] = useState('System ready. Enter directive or select quick action.');
+  const [directive, setDirective] = useState('Check health status of Node-04 and optimize VRAM allocation.');
+  const [output, setOutput] = useState('System ready. Enter directive or select quick action to dispatch Gemini 3.6 Flash agent.');
+  const [loading, setLoading] = useState(false);
 
   const quickDirectives = [
     'Check health status of Node-04 and optimize VRAM allocation.',
@@ -12,12 +13,28 @@ export default function DiagnosticsPage() {
     'Purge stale OpenVDR volume caches across all render blades.'
   ];
 
-  const handleDispatch = () => {
-    setOutput(`[INFO] Dispatching operator directive: "${directive}"\n[GEMINI-3.6-FLASH] Multi-agent reasoning stream initialized...\n[SUCCESS] Node orchestration and telemetry adjustments verified across cluster segments.`);
+  const handleDispatch = async () => {
+    setLoading(true);
+    setOutput(`[CONNECTING] Establishing secure WebSocket / API Bus to Gemini 3.6 Flash...\n[DISPATCHING] Directive: "${directive}"`);
+    
+    try {
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directive })
+      });
+      const data = await res.json();
+      setOutput(data.output);
+    } catch (err) {
+      setOutput(`[ERROR] Failed to reach Gemini reasoning bus: ${err}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInjectChaos = () => {
-    setOutput(`[WARNING] CHAOS INJECTED: Simulate Overheat on Node-02!\n[ALERT] Thermal threshold exceeded (92°C). Autonomous failover triggered.\n[SUCCESS] Workloads re-routed successfully.`);
+    setDirective('Simulate thermal runaway on Node-02 and trigger autonomous failover protocol.');
+    setOutput(`[WARNING] CHAOS INJECTED: Simulate Overheat on Node-02!\n[ALERT] Thermal threshold exceeded (92°C). Autonomous failover ready for agent dispatch.`);
   };
 
   const logs = [
@@ -58,7 +75,7 @@ export default function DiagnosticsPage() {
             <span>⚡</span> Live Gemini Reasoning Bus
           </div>
           <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded font-mono">
-            Gemini Engine Active
+            Gemini Engine Active (3.6 Flash)
           </span>
         </div>
 
@@ -90,9 +107,10 @@ export default function DiagnosticsPage() {
             />
             <button
               onClick={handleDispatch}
-              className="bg-amber-500 hover:bg-amber-600 text-gray-950 font-semibold px-6 py-2.5 rounded-lg text-sm transition-colors shadow-sm shrink-0"
+              disabled={loading}
+              className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-gray-950 font-semibold px-6 py-2.5 rounded-lg text-sm transition-colors shadow-sm shrink-0"
             >
-              Dispatch Agent
+              {loading ? 'Processing...' : 'Dispatch Agent'}
             </button>
           </div>
         </div>
@@ -103,7 +121,7 @@ export default function DiagnosticsPage() {
             <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Agent Reasoning Stream Output</span>
             <span className="text-[10px] text-gray-500 font-mono">Secure WebSocket / API Bus</span>
           </div>
-          <pre className="bg-[#080a0f] border border-[#262f3f] rounded-lg p-4 text-xs font-mono text-emerald-400 h-40 overflow-y-auto leading-relaxed">
+          <pre className="bg-[#080a0f] border border-[#262f3f] rounded-lg p-4 text-xs font-mono text-emerald-400 h-48 overflow-y-auto leading-relaxed whitespace-pre-wrap">
             {output}
           </pre>
         </div>
