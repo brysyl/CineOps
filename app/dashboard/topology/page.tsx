@@ -12,7 +12,6 @@ export default function Topology3DPage() {
     const currentMount = mountRef.current;
     if (!currentMount) return;
 
-    // Scene, Camera, Renderer
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#080a0f');
     scene.fog = new THREE.FogExp2('#080a0f', 0.035);
@@ -26,7 +25,6 @@ export default function Topology3DPage() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     currentMount.appendChild(renderer.domElement);
 
-    // Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
 
@@ -38,7 +36,6 @@ export default function Topology3DPage() {
     pointLight.position.set(0, 5, 0);
     scene.add(pointLight);
 
-    // Create Server Racks & Blades
     const rackGroup = new THREE.Group();
     scene.add(rackGroup);
 
@@ -51,14 +48,12 @@ export default function Topology3DPage() {
         const x = (c - cols / 2 + 0.5) * 2.8;
         const z = (r - rows / 2 + 0.5) * 2.5;
 
-        // Rack Frame
         const frameGeo = new THREE.BoxGeometry(2.4, 3.8, 1.8);
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x121620, roughness: 0.7, metalness: 0.5 });
         const rack = new THREE.Mesh(frameGeo, frameMat);
         rack.position.set(x, 0, z);
         rackGroup.add(rack);
 
-        // Server Blades inside rack
         for (let b = 0; b < 3; b++) {
           const bladeGeo = new THREE.BoxGeometry(2.1, 0.9, 1.6);
           const bladeMat = new THREE.MeshStandardMaterial({ 
@@ -78,12 +73,10 @@ export default function Topology3DPage() {
       }
     }
 
-    // Grid Floor
     const gridHelper = new THREE.GridHelper(30, 30, 0xf59e0b, 0x1e293b);
     gridHelper.position.y = -2.5;
     scene.add(gridHelper);
 
-    // Animation Loop
     let animationFrameId: number;
     let clock = new THREE.Clock();
 
@@ -91,14 +84,11 @@ export default function Topology3DPage() {
       animationFrameId = requestAnimationFrame(animate);
       const elapsedTime = clock.getElapsedTime();
 
-      // Gentle rack rotation
       rackGroup.rotation.y = elapsedTime * 0.08;
 
-      // Pulse effects based on state
       blades.forEach((item, index) => {
         const mat = item.mesh.material as THREE.MeshStandardMaterial;
         if (clusterState === 'chaos') {
-          // Node 04 (index 3 or similar) turns critical red pulsing
           if (item.id === 4) {
             const pulse = Math.sin(elapsedTime * 10) * 0.5 + 0.5;
             mat.emissive.setHex(0xef4444);
@@ -108,7 +98,6 @@ export default function Topology3DPage() {
             mat.emissiveIntensity = 0.4;
           }
         } else if (clusterState === 'optimized') {
-          // Flashing green as Gemini rebalances
           const pulse = Math.sin(elapsedTime * 6 + index) * 0.5 + 0.5;
           mat.emissive.setHex(0x10b981);
           mat.emissiveIntensity = 0.3 + pulse * 0.7;
@@ -123,7 +112,6 @@ export default function Topology3DPage() {
 
     animate();
 
-    // Resize Handler
     const handleResize = () => {
       if (!currentMount) return;
       camera.aspect = currentMount.clientWidth / currentMount.clientHeight;
@@ -149,7 +137,10 @@ export default function Topology3DPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-800 pb-4 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-amber-500 flex items-center gap-2">
-            <span>🌐</span> 3D Spatial Cluster Topology Visualizer
+            <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            3D Spatial Cluster Topology Visualizer
           </h1>
           <p className="text-sm text-gray-400 mt-1">
             Interactive WebGL 3D datacenter rendering cluster blades with real-time Gemini telemetry feedback.

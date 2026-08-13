@@ -59,7 +59,10 @@ export default function DashboardAgentPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-gray-800 pb-4 gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-amber-500 flex items-center gap-2">
-            <span>🤖</span> CineOps Autonomous Agent Brain & Diagnostics
+            <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            CineOps Autonomous Agent Brain & Diagnostics
           </h1>
           <p className="text-sm text-gray-400 mt-1">
             Live multi-agent reasoning console and automated cluster telemetry logs.
@@ -73,7 +76,10 @@ export default function DashboardAgentPage() {
             disabled={loading}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-red-600/20 flex items-center gap-2 border border-red-500 animate-pulse disabled:opacity-50"
           >
-            <span>⚡</span> Inject Chaos (Simulate Overheat)
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Inject Chaos (Simulate Overheat)
           </button>
 
           <div className="flex items-center gap-2 bg-[#121620] px-3 py-2 rounded-lg border border-gray-800 text-xs text-emerald-400">
@@ -86,7 +92,9 @@ export default function DashboardAgentPage() {
       {/* Chaos Alert Banner (Conditional) */}
       {isChaosActive && (
         <div className="bg-red-950/40 border border-red-600/50 rounded-xl p-4 flex items-center gap-3 text-red-300 text-sm animate-pulse">
-          <span className="text-xl">🚨</span>
+          <svg className="w-5 h-5 text-red-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
           <div>
             <strong className="font-semibold">CRITICAL ALERT:</strong> Artificial thermal spike & VRAM saturation injected into Node-04. Awaiting Gemini agent mitigation stream...
           </div>
@@ -97,7 +105,10 @@ export default function DashboardAgentPage() {
       <div className="bg-[#121620]/60 border border-gray-800 rounded-2xl p-6 space-y-6 shadow-xl backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-            <span className="text-amber-500">⚡</span> Live Gemini Reasoning Bus
+            <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Live Gemini Reasoning Bus
           </h2>
           <span className="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full">
             Gemini Engine Active
@@ -164,7 +175,10 @@ export default function DashboardAgentPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <span className="text-amber-500">📊</span> Real-Time Agent Diagnostics & Telemetry Logs
+              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Real-Time Agent Diagnostics & Telemetry Logs
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">Historical and active autonomous multi-agent triggers across render nodes.</p>
           </div>
