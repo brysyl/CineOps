@@ -2,11 +2,37 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
+    // 0. Verify caller — require a shared secret so this webhook can't be
+    // triggered anonymously by anyone who finds the URL.
+    const authHeader = req.headers.get('x-cineops-secret');
+    const expectedSecret = process.env.CINEOPS_INTERNAL_SECRET;
+
+    if (!expectedSecret) {
+      return NextResponse.json(
+        { error: 'CINEOPS_INTERNAL_SECRET variable is missing in Vercel settings.' },
+        { status: 500 }
+      );
+    }
+
+    if (authHeader !== expectedSecret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // 1. Safely parse incoming JSON body without throwing unhandled exceptions
     const body = await req.json().catch(() => ({}));
-    const node = body.node || 'Node-04';
-    const temp = body.temp || '92°C';
-    const safetyLimit = body.safetyLimit || '80°C';
+    const node = body.node;
+    const temp = body.temp;
+    const safetyLimit = body.safetyLimit;
+
+    // Fail loudly instead of alerting on fabricated defaults — a missing
+    // node/temp means something upstream is broken and we don't want to
+    // page someone about a node that doesn't exist.
+    if (!node || temp === undefined || safetyLimit === undefined) {
+      return NextResponse.json(
+        { error: 'Missing required fields: node, temp, and safetyLimit are all required.' },
+        { status: 400 }
+      );
+    }
 
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
@@ -25,7 +51,7 @@ export async function POST(req: Request) {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `🔥 *CineOps Server Overheating Alert*\n\n*Target Server:*\n\`${node}\` \n\n*Current Temperature:*\n\`${temp}\` *(Safety Limit: ${safetyLimit})*`,
+            text: `🔥 *CineOps Server Overheating Alert*\n\n*Target Server:* ${node}\n*Current Temp:* ${temp}°C\n*Safety Limit:* ${safetyLimit}°C`,
           },
         },
       ],
@@ -38,21 +64,22 @@ export async function POST(req: Request) {
       body: JSON.stringify(slackPayload),
     });
 
-    // Slack returns plain text ("ok"), NOT JSON
+    // Slack returns plain text ("ok"), NOT JSON — check both status and body,
+    // since Slack has historically returned 200 with a non-"ok" body on
+    // certain webhook misconfigurations.
     const slackText = await response.text();
 
-    if (!response.ok) {
+    if (!response.ok || slackText !== 'ok') {
       return NextResponse.json(
-        { error: `Slack returned HTTP ${response.status}: ${slackText}` },
-        { status: response.status }
+        { error: `Slack webhook rejected the alert: ${response.status} ${slackText}` },
+        { status: 502 }
       );
     }
 
     return NextResponse.json({ success: true, slackMessage: slackText });
   } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || 'Server execution error' },
-      { status: 500 }
-    );
+    // Avoid leaking internal error details to untrusted callers.
+    console.error('Slack alert route error:', error);
+    return NextResponse.json({ error: 'Server execution error' }, { status: 500 });
   }
 }
