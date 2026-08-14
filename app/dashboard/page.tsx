@@ -1,406 +1,298 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Server, HardDrive, Layers, Flame, AlertTriangle, Thermometer, Activity, AlertCircle } from 'lucide-react';
 
-export default function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTriggered, setIsTriggered] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+interface RenderJob {
+  id: string;
+  name: string;
+  engine: string;
+  status: 'RENDERING' | 'REALLOCATED' | 'QUEUED' | 'COMPLETED' | 'HALTED';
+  output: string;
+  frames: string;
+  node: string;
+  progress: number;
+}
 
-  // 32 Node status state (matches screenshot baseline: Row 4 nodes 25, 27, 30, 31 are amber)
-  const defaultNodeStatus = Array(32).fill('healthy').map((_, i) => {
-    if ([24, 26, 29, 30].includes(i)) return 'warning'; // Amber nodes in row 4
-    return 'healthy';
-  });
+const INITIAL_JOBS: RenderJob[] = [
+  { id: 'JOB-1032', name: 'Neon Rain / Final Composite', engine: 'Unreal Engine 5.4', status: 'RENDERING', output: '8K EXR', frames: '1,284 / 2,400 frames', node: 'Node - 12', progress: 50 },
+  { id: 'JOB-1031', name: 'Astra / Volumetric Pass', engine: 'Blender 4.2', status: 'RENDERING', output: '4K EXR', frames: '324 / 324 frames', node: 'Node - 07', progress: 100 },
+  { id: 'JOB-1030', name: 'Scene 08 / Take 3', engine: 'Maya 2025', status: 'REALLOCATED', output: '8K EXR', frames: '672 / 672 frames', node: 'Node - 04 → 12', progress: 100 },
+  { id: 'JOB-1029', name: 'LED Volume Calibration', engine: 'Unreal Engine 5.4', status: 'QUEUED', output: '4K EXR', frames: '0 / 750 frames', node: 'Node - 19', progress: 0 },
+  { id: 'JOB-1028', name: 'Hero Asset / Fur Groom', engine: 'Maya 2025', status: 'COMPLETED', output: '4K EXR', frames: '960 / 960 frames', node: 'Node - 22', progress: 100 },
+  { id: 'JOB-1027', name: 'Atmosphere / 16-bit Deep', engine: 'Blender 4.2', status: 'HALTED', output: '8K EXR', frames: '411 / 1,000 frames', node: 'Node - 04', progress: 41 },
+];
 
-  const [nodeStates, setNodeStates] = useState(defaultNodeStatus);
+export default function ControlRoomDashboard() {
+  const [jobs, setJobs] = useState<RenderJob[]>(INITIAL_JOBS);
+  const [gpuTemp, setGpuTemp] = useState<number>(67);
+  const [slackSending, setSlackSending] = useState(false);
+  const [slackDispatched, setSlackDispatched] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
-  // Trigger Slack Alert via API endpoint
-  const triggerThermalAlert = async () => {
-    setIsLoading(true);
-    setFeedback(null);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setJobs((prev) =>
+        prev.map((j) => (j.status === 'RENDERING' ? { ...j, progress: Math.min(100, j.progress + 1) } : j))
+      );
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const injectThermalFailure = async () => {
+    setSlackSending(true);
+    setErrorMsg('');
+    setGpuTemp(92);
 
     try {
-      const response = await fetch('/api/alerts/thermal', {
+      const res = await fetch('/api/slack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          serverName: "RenderNode-04 (Maya Farm)",
-          temperature: 92,
-          threshold: 80
-        }),
+        body: JSON.stringify({ node: 'Node-04', temp: '92°C', safetyLimit: '80°C' }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to dispatch alert.');
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        data = { error: text || `HTTP ${res.status} Response` };
       }
 
-      // Dynamically highlight Node-04 in grid as critical
-      const updatedNodes = [...nodeStates];
-      updatedNodes[3] = 'critical'; // Node-04
-      setNodeStates(updatedNodes);
-      setIsTriggered(true);
-
-      setFeedback({ type: 'success', message: 'Thermal alert dispatched to Slack! Node-04 isolated.' });
-    } catch (error: any) {
-      console.error("Alert trigger error:", error);
-      setFeedback({ type: 'error', message: error.message || 'Error executing request.' });
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error || 'Failed to dispatch alert');
+      } else {
+        setSlackDispatched(true);
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Network request failed');
     } finally {
-      setIsLoading(false);
-      setTimeout(() => setFeedback(null), 6000);
+      setSlackSending(false);
+      setTimeout(() => {
+        setGpuTemp(67);
+        setSlackDispatched(false);
+      }, 5000);
     }
   };
 
-  const activeJobs = [
-    {
-      id: '200-CB42',
-      name: 'Neon Rain / Final Composite',
-      engine: 'Unreal Engine 5.4',
-      status: 'RENDERING',
-      output: '8K EXR',
-      frames: '1,284 / 2,400 frames',
-      node: 'Node - 12',
-      progress: 50,
-      statusColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      barColor: 'bg-cyan-500',
-    },
-    {
-      id: '200-CB41',
-      name: 'Astra / Volumetric Pass',
-      engine: 'Blender 4.2',
-      status: 'RENDERING',
-      output: '4K EXR',
-      frames: '824 / 824 frames',
-      node: 'Node - 07',
-      progress: 100,
-      statusColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-      barColor: 'bg-emerald-500',
-    },
-    {
-      id: '200-CB40',
-      name: 'Scene 08 / Take 3',
-      engine: 'Maya 2025',
-      status: 'REMEDIATED',
-      output: '8K EXR',
-      frames: '672 / 672 frames',
-      node: 'Node - 04 → 12',
-      progress: 100,
-      statusColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-      barColor: 'bg-emerald-500',
-    },
-    {
-      id: '200-CB39',
-      name: 'LED Volume Calibration',
-      engine: 'Unreal Engine 5.4',
-      status: 'QUEUED',
-      output: '4K EXR',
-      frames: '0 / 740 frames',
-      node: 'Node - 19',
-      progress: 0,
-      statusColor: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-      barColor: 'bg-slate-700',
-    },
-    {
-      id: '200-CB38',
-      name: 'Hero Asset / Fur Groom',
-      engine: 'Maya 2025',
-      status: 'COMPLETED',
-      output: '4K EXR',
-      frames: '960 / 960 frames',
-      node: 'Node - 22',
-      progress: 100,
-      statusColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      barColor: 'bg-emerald-500',
-    },
-    {
-      id: '200-CB37',
-      name: 'Atmosphere / 16-bit Deep',
-      engine: 'Blender 4.2',
-      status: 'FAILED',
-      output: '8K EXR',
-      frames: '441 / 1,080 frames',
-      node: 'Node - 04',
-      progress: 41,
-      statusColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
-      barColor: 'bg-rose-500',
-    },
-  ];
-
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto text-gray-200">
-      
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-2">
+    <div className="min-h-screen bg-[#070a13] text-gray-100 p-6 font-sans">
+      {/* Top Header */}
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-extrabold tracking-widest text-emerald-400 uppercase">Production Live</span>
+          <div className="flex items-center gap-2 text-xs font-mono text-emerald-400 mb-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            PRODUCTION LIVE
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Good afternoon, operator.</h1>
-          <p className="text-xs text-gray-400 mt-1">Here is the health of your render ecosystem right now.</p>
+          <h1 className="text-2xl font-bold">Good afternoon, operator.</h1>
+          <p className="text-xs text-gray-400">Here is the health of your render ecosystem right now.</p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <span className="px-2.5 py-1 text-[10px] font-mono font-semibold bg-[#161d2f] text-gray-400 border border-[#232d42] rounded">STAGE 03</span>
-          <span className="text-[11px] font-mono text-gray-500">Updated just now</span>
+        <div className="flex items-center gap-3 text-xs text-gray-400 font-mono">
+          <span className="px-2 py-1 bg-[#121927] border border-[#1e293b] rounded">STAGE 03</span>
+          <span>Updated: Just now</span>
         </div>
       </div>
 
-      {/* Top 4 Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* GPU cluster utilization */}
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-              <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-[#0c121e] border border-[#1e293b] rounded-xl p-4">
+          <div className="flex justify-between items-start text-gray-400 text-xs mb-2">
+            <span>GPU cluster utilization</span>
+            <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">LIVE</span>
           </div>
-          <div className="text-3xl font-extrabold text-white mt-4">78.4%</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">GPU cluster utilization</div>
-          <div className="text-[11px] text-emerald-400 mt-2 font-mono">+4.2% vs last hour</div>
+          <div className="text-3xl font-bold font-mono">78.4%</div>
+          <div className="text-[11px] text-emerald-400 mt-2">+4.2% vs last hour</div>
         </div>
 
-        {/* Active render nodes */}
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-              <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
+        <div className="bg-[#0c121e] border border-[#1e293b] rounded-xl p-4">
+          <div className="flex justify-between items-start text-gray-400 text-xs mb-2">
+            <span>Active render nodes</span>
+            <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">LIVE</span>
           </div>
-          <div className="text-3xl font-extrabold text-white mt-4">28 / 32</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">Active render nodes</div>
-          <div className="text-[11px] text-emerald-400 mt-2 font-mono">87.5% availability</div>
+          <div className="text-3xl font-bold font-mono">28 / 32</div>
+          <div className="text-[11px] text-emerald-400 mt-2">87.5% availability</div>
         </div>
 
-        {/* VRAM consumption */}
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-              <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
+        <div className="bg-[#0c121e] border border-[#1e293b] rounded-xl p-4">
+          <div className="flex justify-between items-start text-gray-400 text-xs mb-2">
+            <span>VRAM consumption</span>
+            <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">LIVE</span>
           </div>
-          <div className="text-3xl font-extrabold text-white mt-4">312.8 GB</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">VRAM consumption</div>
-          <div className="text-[11px] text-gray-500 mt-2 font-mono">of 400 GB allocated</div>
+          <div className="text-3xl font-bold font-mono">312.8 GB</div>
+          <div className="text-[11px] text-gray-400 mt-2">of 400 GB allocated</div>
         </div>
 
-        {/* Frames in queue */}
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-              <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
+        <div className="bg-[#0c121e] border border-[#1e293b] rounded-xl p-4">
+          <div className="flex justify-between items-start text-gray-400 text-xs mb-2">
+            <span>Frames in queue</span>
+            <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-800/40">LIVE</span>
           </div>
-          <div className="text-3xl font-extrabold text-white mt-4">4,860</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">Frames in queue</div>
-          <div className="text-[11px] text-gray-500 mt-2 font-mono">12 jobs processing</div>
+          <div className="text-3xl font-bold font-mono">4,860</div>
+          <div className="text-[11px] text-gray-400 mt-2">12 jobs processing</div>
         </div>
       </div>
 
-      {/* CHAOS ENGINEERING & SLACK TRIGGER BANNER */}
-      <div className="bg-[#101625] border border-amber-500/30 rounded-xl p-5 relative overflow-hidden bg-gradient-to-r from-[#101625] via-[#141c2e] to-[#101625]">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      {/* Trigger Alert Section */}
+      <div className="bg-[#121622] border border-amber-500/20 rounded-xl p-4 mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-extrabold text-amber-400 uppercase tracking-wider">
-              <span>⚠️</span> Autonomous Chaos Engineering Bus
+            <div className="flex items-center gap-2 text-amber-400 text-xs font-bold font-mono uppercase mb-1">
+              <AlertTriangle className="w-4 h-4" /> AUTONOMOUS CHAOS ENGINEERING BUS
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-gray-400">
               Trigger a thermal incident payload to dispatch a live Slack webhook alert and test autonomous agent load shedding.
             </p>
           </div>
-
           <button
-            onClick={triggerThermalAlert}
-            disabled={isLoading}
-            className={`shrink-0 px-5 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-lg ${
-              isLoading
-                ? 'bg-rose-900/60 text-rose-300 border border-rose-800'
-                : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 active:scale-95'
+            onClick={injectThermalFailure}
+            disabled={slackSending}
+            className={`px-4 py-2.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+              slackDispatched
+                ? 'bg-emerald-600 text-white'
+                : slackSending
+                ? 'bg-amber-600 text-white animate-pulse'
+                : 'bg-red-600 hover:bg-red-500 text-white'
             }`}
           >
-            {isLoading ? (
-              <>
-                <span className="w-3.5 h-3.5 border-2 border-rose-300 border-t-transparent rounded-full animate-spin"></span>
-                Dispatching Alert...
-              </>
-            ) : (
-              <>
-                🔥 Inject Thermal Critical Failure
-              </>
-            )}
+            {slackSending ? 'DISPATCHING...' : slackDispatched ? 'ALERT DISPATCHED!' : '🔥 Inject Thermal Critical Failure'}
           </button>
         </div>
 
-        {feedback && (
-          <div className={`mt-3 text-xs p-2.5 rounded border ${
-            feedback.type === 'success' ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-rose-950/80 text-rose-300 border-rose-800'
-          }`}>
-            {feedback.message}
+        {errorMsg && (
+          <div className="mt-3 p-2.5 bg-red-950/60 border border-red-500/40 rounded text-red-300 text-xs font-mono break-all">
+            ⚠️ {errorMsg}
           </div>
         )}
       </div>
 
-      {/* 32-Node Cluster Performance Grid */}
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-wide">Cluster performance</h2>
-            <p className="text-xs text-gray-400 mt-0.5">GPU utilization across 32 render nodes</p>
-          </div>
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <span className="flex items-center gap-1.5 text-amber-400">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span> GPU
-            </span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span> HEALTHY
-            </span>
+      {/* Node Grid */}
+      <div className="bg-[#0c121e] border border-[#1e293b] rounded-xl p-5 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-sm font-semibold">Cluster performance</h2>
+          <div className="flex items-center gap-3 text-[11px] font-mono text-gray-400">
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded bg-amber-400"></span> GPU</span>
+            <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded bg-emerald-400"></span> HEALTHY</span>
           </div>
         </div>
-
-        {/* 32 Interactive Nodes Grid (4 rows x 8 cols) */}
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 py-2">
-          {nodeStates.map((status, index) => {
-            const nodeNumber = String(index + 1).padStart(2, '0');
+        <div className="grid grid-cols-8 gap-2">
+          {Array.from({ length: 32 }, (_, i) => {
+            const num = (i + 1).toString().padStart(2, '0');
+            const isFault = i === 3 && gpuTemp >= 90;
+            const isWarn = [24, 26, 29, 30].includes(i);
+            const statusBg = isFault
+              ? 'bg-red-500 text-white animate-pulse'
+              : isWarn
+              ? 'bg-amber-400/80 text-black'
+              : 'bg-emerald-400 text-black';
             return (
-              <div
-                key={index}
-                className={`h-16 rounded-lg transition-all duration-300 flex flex-col justify-end p-2 text-[10px] font-mono font-bold cursor-pointer relative ${
-                  status === 'critical'
-                    ? 'bg-rose-500 text-white shadow-lg shadow-rose-950/80 animate-bounce'
-                    : status === 'warning'
-                    ? 'bg-amber-400 hover:bg-amber-300 text-slate-950'
-                    : 'bg-[#10b981] hover:bg-[#0ea5e9] text-slate-950'
-                }`}
-                title={`Node-${nodeNumber}: ${status.toUpperCase()}`}
-              >
-                <span className="opacity-70">#{nodeNumber}</span>
+              <div key={i} className={`h-10 rounded flex items-center justify-center font-mono text-xs font-bold ${statusBg}`}>
+                #{num}
               </div>
             );
           })}
         </div>
-
-        <div className="flex justify-between items-center text-[11px] font-mono text-gray-500 pt-2 border-t border-[#1b2438]">
-          <span>Node utilization / last 5 min</span>
-          <span>MIN 58% — MAX 88%</span>
-        </div>
       </div>
 
-      {/* System Signals */}
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-sm font-bold text-white tracking-wide">System signals</h2>
-          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 px-2 py-0.5 rounded">4 NOMINAL</span>
-        </div>
-
-        <div className="space-y-3 font-mono text-xs">
-          {/* GPU Thermals */}
-          <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
-            <div className="flex items-center gap-3">
-              <span className="text-emerald-400 text-base">🌡️</span>
-              <div>
-                <div className="text-white font-bold">GPU thermals</div>
-                <div className="text-[10px] text-gray-500">Within operating range</div>
-              </div>
-            </div>
-            <div className="text-lg font-bold text-white">67°C</div>
-          </div>
-
-          {/* Worker Heartbeat */}
-          <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
-            <div className="flex items-center gap-3">
-              <span className="text-emerald-400 text-base">⚙️</span>
-              <div>
-                <div className="text-white font-bold">Worker heartbeat</div>
-                <div className="text-[10px] text-gray-500">32 / 32 responding</div>
-              </div>
-            </div>
-            <div className="text-lg font-bold text-emerald-400">99.98%</div>
-          </div>
-
-          {/* Anomalies */}
-          <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
-            <div className="flex items-center gap-3">
-              <span className="text-amber-400 text-base">⚠️</span>
-              <div>
-                <div className="text-white font-bold">Anomalies</div>
-                <div className="text-[10px] text-gray-500">
-                  {isTriggered ? 'Thermal critical event detected on Node-04' : 'Agent watching Node-04'}
+      {/* System Signals & Queue */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="bg-[#0c121e] border border-[#1e293b] rounded-xl p-5">
+          <h2 className="text-sm font-semibold mb-4">System signals</h2>
+          <div className="space-y-3 text-xs">
+            <div className="flex justify-between items-center p-3 bg-[#121927] rounded-lg">
+              <div className="flex items-center gap-2">
+                <Thermometer className="w-4 h-4 text-gray-400" />
+                <div>
+                  <div className="font-medium">GPU Thermals</div>
+                  <div className="text-[10px] text-gray-500">Within operating range</div>
                 </div>
               </div>
+              <span className={`font-mono text-sm font-bold ${gpuTemp >= 90 ? 'text-red-400 animate-pulse' : 'text-gray-200'}`}>
+                {gpuTemp}°C
+              </span>
             </div>
-            <div className={`text-lg font-bold ${isTriggered ? 'text-rose-400 animate-pulse' : 'text-amber-400'}`}>
-              01
+
+            <div className="flex justify-between items-center p-3 bg-[#121927] rounded-lg">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-gray-400" />
+                <div>
+                  <div className="font-medium">Worker heartbeat</div>
+                  <div className="text-[10px] text-gray-500">32 / 32 responding</div>
+                </div>
+              </div>
+              <span className="font-mono text-emerald-400 font-bold">99.98%</span>
+            </div>
+
+            <div className="flex justify-between items-center p-3 bg-[#121927] rounded-lg">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-gray-400" />
+                <div>
+                  <div className="font-medium">Anomalies</div>
+                  <div className="text-[10px] text-gray-500">Agent watching Node-04</div>
+                </div>
+              </div>
+              <span className="font-mono text-red-400 font-bold">01</span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Active Render Queue Table */}
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4 overflow-hidden">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-wide">Active render queue</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Jobs currently flowing through the farm</p>
+        <div className="lg:col-span-2 bg-[#0c121e] border border-[#1e293b] rounded-xl p-5">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-sm font-semibold">Active render queue</h2>
+            <span className="text-xs text-amber-400 font-mono">View audit trail →</span>
           </div>
-          <a href="/dashboard/history" className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1">
-            View audit trail ↗
-          </a>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="border-b border-[#1b2438] text-[10px] font-mono text-gray-500 uppercase tracking-wider">
-                <th className="py-3 px-2">Job</th>
-                <th className="py-3 px-2">Engine</th>
-                <th className="py-3 px-2">Status</th>
-                <th className="py-3 px-2">Output</th>
-                <th className="py-3 px-2">Node</th>
-                <th className="py-3 px-2 text-right">Progress</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1b2438] text-xs">
-              {activeJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-[#141b2e] transition-colors">
-                  <td className="py-3.5 px-2">
-                    <div className="font-bold text-white">{job.name}</div>
-                    <div className="text-[10px] font-mono text-gray-500">{job.id}</div>
-                  </td>
-                  <td className="py-3.5 px-2 font-mono text-gray-300">{job.engine}</td>
-                  <td className="py-3.5 px-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${job.statusColor}`}>
-                      {job.status}
-                    </span>
-                  </td>
-                  <td className="py-3.5 px-2">
-                    <div className="font-mono text-gray-200">{job.output}</div>
-                    <div className="text-[10px] font-mono text-gray-500">{job.frames}</div>
-                  </td>
-                  <td className="py-3.5 px-2 font-mono text-gray-300">{job.node}</td>
-                  <td className="py-3.5 px-2 text-right">
-                    <div className="flex items-center justify-end gap-3 font-mono text-gray-300">
-                      <span>{job.progress}%</span>
-                      <div className="w-16 bg-[#0a0e18] h-1.5 rounded-full overflow-hidden border border-[#1b2438]">
-                        <div
-                          className={`h-full ${job.barColor}`}
-                          style={{ width: `${job.progress}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="text-gray-500 text-[10px] font-mono border-b border-[#1e293b]">
+                <tr>
+                  <th className="pb-2">JOB</th>
+                  <th className="pb-2">ENGINE</th>
+                  <th className="pb-2">STATUS</th>
+                  <th className="pb-2">OUTPUT</th>
+                  <th className="pb-2">NODE</th>
+                  <th className="pb-2 text-right">PROGRESS</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-[#182234]">
+                {jobs.map((job) => (
+                  <tr key={job.id} className="hover:bg-[#121927]/50">
+                    <td className="py-3 font-medium">
+                      {job.name}
+                      <div className="text-[10px] text-gray-500 font-mono">{job.id}</div>
+                    </td>
+                    <td className="py-3 text-gray-400">{job.engine}</td>
+                    <td className="py-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                        job.status === 'RENDERING' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/50' :
+                        job.status === 'REALLOCATED' ? 'bg-amber-950 text-amber-400 border border-amber-800/50' :
+                        job.status === 'COMPLETED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800/50' :
+                        'bg-red-950 text-red-400 border border-red-800/50'
+                      }`}>
+                        {job.status}
+                      </span>
+                    </td>
+                    <td className="py-3 text-gray-300">
+                      {job.output}
+                      <div className="text-[10px] text-gray-500 font-mono">{job.frames}</div>
+                    </td>
+                    <td className="py-3 font-mono text-gray-400">{job.node}</td>
+                    <td className="py-3 text-right">
+                      <div className="flex items-center justify-end gap-2 font-mono">
+                        <span>{job.progress}%</span>
+                        <div className="w-16 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${job.status === 'HALTED' ? 'bg-red-500' : 'bg-cyan-400'}`}
+                            style={{ width: `${job.progress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-
     </div>
   );
 }
