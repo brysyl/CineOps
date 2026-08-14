@@ -201,25 +201,65 @@ export default function DashboardPage() {
           })}
         </div>
       </div>
-
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-sm font-bold text-white tracking-wide">System signals</h2>
-          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 px-2 py-0.5 rounded">4 NOMINAL</span>
-        </div>
-        <div className="space-y-3 font-mono text-xs">
-          <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
-            <div className="flex items-center gap-3">
-              <span className="text-emerald-400 text-base">🌡️</span>
-              <div>
-                <div className="text-white font-bold">GPU thermals</div>
-                <div className="text-[10px] text-gray-500">Within operating range</div>
-              </div>
-            </div>
-            <div className={`text-lg font-bold transition-all duration-500 ${isTriggered ? 'text-rose-400 font-extrabold animate-pulse' : 'text-white'}`}>{gpuTemp}°C</div>
-          </div>
+<div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4">
+  <div className="flex justify-between items-center">
+    <h2 className="text-sm font-bold text-white tracking-wide">System signals</h2>
+    <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 px-2 py-0.5 rounded">4 NOMINAL</span>
+  </div>
+  
+  <div className="space-y-3 font-mono text-xs">
+    {/* Nominal 1: Thermal Sentinel */}
+    <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
+      <div className="flex items-center gap-3">
+        <span className="text-emerald-400 text-base">🌡️</span>
+        <div>
+          <div className="text-white font-bold">Thermal Sentinel</div>
+          <div className="text-[10px] text-gray-500">Within operating range</div>
         </div>
       </div>
+      <div className={`text-lg font-bold transition-all duration-500 ${isTriggered ? 'text-rose-400 font-extrabold animate-pulse' : 'text-white'}`}>
+        {gpuTemp}°C
+      </div>
+    </div>
+
+    {/* Nominal 2: VRAM Optimizer */}
+    <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
+      <div className="flex items-center gap-3">
+        <span className="text-emerald-400 text-base">💾</span>
+        <div>
+          <div className="text-white font-bold">VRAM Optimizer</div>
+          <div className="text-[10px] text-gray-500">Allocation stable across blades</div>
+        </div>
+      </div>
+      <div className="text-lg font-bold text-white">78%</div>
+    </div>
+
+    {/* Nominal 3: Render Pipeline Master */}
+    <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
+      <div className="flex items-center gap-3">
+        <span className="text-emerald-400 text-base">⚙️</span>
+        <div>
+          <div className="text-white font-bold">Render Pipeline Master</div>
+          <div className="text-[10px] text-gray-500">Queue processing at standard throughput</div>
+        </div>
+      </div>
+      <div className="text-lg font-bold text-white">14 Jobs</div>
+    </div>
+
+    {/* Nominal 4: Autonomous Balancer */}
+    <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
+      <div className="flex items-center gap-3">
+        <span className="text-emerald-400 text-base">⚖️</span>
+        <div>
+          <div className="text-white font-bold">Autonomous Balancer</div>
+          <div className="text-[10px] text-gray-500">Load distributed evenly across nodes</div>
+        </div>
+      </div>
+      <div className="text-lg font-bold text-white">0.05v</div>
+    </div>
+  </div>
+</div>
+
 
       <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4 overflow-hidden">
         <div className="flex justify-between items-center">
