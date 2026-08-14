@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CineOps AI — API Endpoint & Webhook Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0B0F17; --bg-card: #111726; --bg-code: #070A10; --border-color: #1E293B;
+      --text-primary: #F8FAFC; --text-secondary: #94A3B8; --text-muted: #64748B;
+      --accent-gold: #F59E0B; --accent-emerald: #10B981; --accent-cyan: #38BDF8; --accent-indigo: #6366F1;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif; --font-mono: 'JetBrains Mono', monospace;
+    }
+    @media print {
+      :root { --bg-main: #FFFFFF; --bg-card: #FFFFFF; --bg-code: #0F172A; --border-color: #E2E8F0; --text-primary: #0F172A; --text-secondary: #334155; --accent-gold: #D97706; }
+      body { padding: 0 !important; background: #fff !important; }
+      .container { border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }
+      .no-print { display: none !important; }
+      @page { size: A4; margin: 12mm; }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: var(--bg-main); color: var(--text-primary); font-family: var(--font-sans); line-height: 1.5; padding: 12px; -webkit-font-smoothing: antialiased; }
+    .container { width: 100%; max-width: 900px; margin: 0 auto; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px 16px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); }
+    @media (min-width: 640px) { body { padding: 30px 20px; } .container { padding: 40px; border-radius: 16px; } }
+    .doc-header { display: flex; flex-direction: column; gap: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 28px; }
+    @media (min-width: 640px) { .doc-header { flex-direction: row; justify-content: space-between; align-items: flex-start; } }
+    .doc-classification { display: inline-block; font-size: 0.7rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent-gold); background: rgba(245, 158, 11, 0.1); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.25); margin-bottom: 8px; }
+    .doc-title { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; color: var(--text-primary); line-height: 1.15; }
+    .doc-subtitle { font-size: 0.95rem; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
+    .doc-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 12px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); background: var(--bg-code); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); min-width: auto; }
+    @media (min-width: 640px) { .doc-meta { display: block; text-align: right; min-width: 170px; padding: 12px 16px; } .doc-meta div { margin-bottom: 4px; } .doc-meta div:last-child { margin-bottom: 0; } }
+    .doc-meta strong { color: var(--text-secondary); }
+    .endpoint-bar { display: flex; align-items: center; gap: 10px; background: var(--bg-code); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 8px; margin-bottom: 24px; overflow-x: auto; }
+    .method-badge { background: var(--accent-indigo); color: #FFF; font-family: var(--font-mono); font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; }
+    .endpoint-path { font-family: var(--font-mono); font-weight: 600; color: var(--text-primary); font-size: 0.9rem; white-space: nowrap; }
+    h2 { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-top: 32px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    h2::before { content: ''; display: inline-block; width: 4px; height: 16px; background: var(--accent-gold); border-radius: 2px; }
+    p, li { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.55; }
+    ul { margin: 8px 0 20px 18px; }
+    li { margin-bottom: 6px; }
+    .pipeline-flow { display: flex; flex-direction: column; gap: 8px; margin: 16px 0 24px 0; }
+    @media (min-width: 640px) { .pipeline-flow { flex-direction: row; align-items: center; } }
+    .pipeline-step { flex: 1; background: var(--bg-code); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent-cyan); text-align: center; }
+    .pipeline-arrow { text-align: center; color: var(--accent-gold); font-family: var(--font-mono); font-weight: bold; font-size: 0.85rem; }
+    @media (min-width: 640px) { .pipeline-arrow { transform: rotate(-90deg); } }
+    .table-wrapper { width: 100%; overflow-x: auto; margin: 16px 0 24px 0; border-radius: 8px; border: 1px solid var(--border-color); }
+    table { width: 100%; border-collapse: collapse; min-width: 500px; }
+    th { background: var(--bg-code); color: var(--text-muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    td { padding: 10px 12px; font-size: 0.82rem; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); background: var(--bg-card); }
+    tr:last-child td { border-bottom: none; }
+    code { font-family: var(--font-mono); font-size: 0.8em; background: var(--bg-code); color: var(--accent-gold); padding: 2px 5px; border-radius: 4px; border: 1px solid var(--border-color); }
+    .code-header { color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 16px; margin-bottom: 6px; font-family: var(--font-mono); font-weight: 600; }
+    .code-block { background: var(--bg-code); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary); overflow-x: auto; white-space: pre; line-height: 1.45; }
+    .doc-footer { margin-top: 36px; padding-top: 16px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px; align-items: center; font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono); }
+    @media (min-width: 640px) { .doc-footer { flex-direction: row; justify-content: space-between; } }
+    .print-btn { background: var(--accent-gold); color: #000; font-family: var(--font-sans); font-weight: 700; font-size: 0.8rem; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="doc-header">
+      <div>
+        <span class="doc-classification">Technical Architecture Specification</span>
+        <h1 class="doc-title">CineOps AI</h1>
+        <div class="doc-subtitle">API Endpoint &amp; Webhook Integration Guide</div>
+      </div>
+      <div class="doc-meta">
+        <div><strong>VERSION:</strong> 3.6-PROD</div>
+        <div><strong>CLASSIFICATION:</strong> Evaluator Guide</div>
+        <div><strong>DATE:</strong> August 2026</div>
+        <div><strong>STATUS:</strong> Operational</div>
+      </div>
+    </header>
+    <div class="endpoint-bar">
+      <span class="method-badge">POST</span>
+      <span class="endpoint-path">/api/alerts/thermal</span>
+    </div>
+    <h2>1. Endpoint Overview</h2>
+    <p>The Thermal Alert API endpoint serves as CineOps AI’s high-priority incident dispatch pipeline. When render farm compute nodes exceed calibrated thermal ceilings, this endpoint ingests telemetry signals, logs autonomous load-shedding directives executed by the <strong>Gemini 3.6 Flash</strong> reasoning bus, and formats a Slack Block Kit payload for immediate channel broadcast.</p>
+    <div class="pipeline-flow">
+      <div class="pipeline-step">Telemetry Sensor / Chaos Injection</div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step">POST /api/alerts/thermal</div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step">Gemini 3.6 Flash Engine</div>
+      <div class="pipeline-arrow">↓</div>
+      <div class="pipeline-step">Slack Broadcast</div>
+    </div>
+    <h2>2. Trigger Conditions</h2>
+    <ul>
+      <li><strong>Telemetry Threshold Violation:</strong> Real-time hardware monitors detect core GPU/CPU temperatures at or exceeding safety limits (Default: <code>80°C</code>).</li>
+      <li><strong>Control Room Chaos Injection:</strong> Operator-initiated chaos engineering drills executed from the Studio Control Room UI.</li>
+      <li><strong>Observability Forwarding:</strong> Webhook alert hooks forwarded directly from Grafana Alertmanager or Prometheus rule triggers.</li>
+    </ul>
+    <h2>3. Request Body Payload</h2>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Req.</th><th>Default</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>serverName</code></td><td>String</td><td>No</td><td>RenderNode-04</td><td>Target server location & node ID</td></tr>
+          <tr><td><code>temperature</code></td><td>Number</td><td>No</td><td><code>88</code></td><td>Live core temp in °C</td></tr>
+          <tr><td><code>threshold</code></td><td>Number</td><td>No</td><td><code>80</code></td><td>Max thermal limit in °C</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="code-header">JSON Request Example</div>
+    <div class="code-block">{
+  "serverName": "RenderNode-02 (Maya Farm)",
+  "temperature": 92,
+  "threshold": 80
+}</div>
+    <h2>4. Response Schemas</h2>
+    <div class="code-header">HTTP 200 OK — Success</div>
+    <div class="code-block">{
+  "success": true,
+  "message": "Thermal alert dispatched for RenderNode-02 (Maya Farm) at 92°C"
+}</div>
+    <div class="code-header">HTTP 500 — Unconfigured Environment</div>
+    <div class="code-block">{
+  "error": "SLACK_WEBHOOK_URL environment variable is missing."
+}</div>
+    <h2>5. Evaluator Verification Commands</h2>
+    <div class="code-header">Live Production Verification (Vercel)</div>
+    <div class="code-block">curl -X POST https://cine-ops-sigma.vercel.app/api/alerts/thermal \
+  -H "Content-Type: application/json" \
+  -d '{
+    "serverName": "RenderNode-02 (Maya Farm)",
+    "temperature": 92,
+    "threshold": 80
+  }'</div>
+    <div class="code-header">Local Verification</div>
+    <div class="code-block">curl -X POST http://localhost:3000/api/alerts/thermal \
+  -H "Content-Type: application/json" \
+  -d '{"serverName": "RenderNode-01", "temperature": 95}'</div>
+    <footer class="doc-footer">
+      <div>CINEOPS AI — CONFIDENTIAL SUBMISSION ASSET</div>
+      <button class="print-btn no-print" onclick="window.print()">Print / Save as PDF</button>
+    </footer>
+  </div>
+</body>
+</html>
