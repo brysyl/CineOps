@@ -30,7 +30,7 @@ Modern film sets rely heavily on **virtual production LED volumes** and high-den
 
 
 ┌──────────────────────┐      ┌────────────────────────┐      ┌────────────────────────┐
-│  Prometheus / Loki   │ ───► │  Google Gemini 1.5     │ ───► │ Active Take Lock       │
+│  Prometheus / Loki   │ ───► │  Google Gemini 3.6 Flash    │ ───► │ Active Take Lock       │
 │  Telemetry Stream    │      │  Diagnostic Agent      │      │ Safety Guardrail Check │
 └──────────────────────┘      └────────────────────────┘      └───────────┬────────────┘
 │
