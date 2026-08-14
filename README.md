@@ -60,7 +60,7 @@ Persists every system alert, model diagnostic trace, and automated fix action in
 | :--- | :--- |
 | **Frontend Framework** | Next.js 15 (App Router, React) |
 | **Styling & UI** | Tailwind CSS, Lucide Icons, Framer Motion |
-| **AI Reasoning Engine** | Google Gemini 1.5 Pro / Flash APIs |
+| **AI Reasoning Engine** | Google Gemini 3.6 Flash / Flash APIs |
 | **Database & Auth** | Supabase PostgreSQL + Row-Level Security |
 | **Telemetry Ingestion** | Grafana Prometheus Endpoint & Loki Log Streams |
 | **Language** | TypeScript (Strict Type Checking) |
