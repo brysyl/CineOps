@@ -10,7 +10,7 @@
 - **Avg. Auto-Fix Speed:** `1.4 Seconds`
 - **Autonomous Resolution Rate:** `98.0%'
 - **Estimated ROI:** `$42,800 / month per stage`
-- **Core Tech:** Next.js 15, Google Gemini 1.5, Supabase (RLS), Grafana Loki, Tailwind CSS
+- **Core Tech:** Next.js 15, Google Gemini 3.6, Supabase (RLS), Grafana Loki, Tailwind CSS
 
 ---
 
