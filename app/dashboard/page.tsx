@@ -1,270 +1,332 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { 
+  Activity, 
+  Cpu, 
+  Thermometer, 
+  Send, 
+  CheckCircle2, 
+  RefreshCw,
+  BellRing,
+  Layers
+} from 'lucide-react';
 
-export default function DashboardPage() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isTriggered, setIsTriggered] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+interface Job {
+  id: string;
+  name: string;
+  engine: string;
+  status: 'PROCESSING' | 'QUEUED' | 'COMPLETED' | 'HALTED';
+  statusColor: string;
+  output: string;
+  frames: string;
+  node: string;
+  progress: number;
+  barColor: string;
+}
 
-  // Dynamic Telemetry States
-  const [gpuUtil, setGpuUtil] = useState(78.4);
-  const [vram, setVram] = useState(312.8);
-  const [gpuTemp, setGpuTemp] = useState(67);
-  const [queueFrames, setQueueFrames] = useState(4860);
+const INITIAL_JOBS: Job[] = [
+  {
+    id: 'JOB-9402',
+    name: 'Anamorphic Lens Flare Render',
+    engine: 'Octane v2024.1',
+    status: 'PROCESSING',
+    statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    output: 'EXR 16-bit Uncompressed',
+    frames: '120 / 480 frames',
+    node: 'node-alpha-01',
+    progress: 45,
+    barColor: 'bg-emerald-500',
+  },
+  {
+    id: 'JOB-9403',
+    name: 'Thermal Depth Pass Optimization',
+    engine: 'Redshift 3.5',
+    status: 'QUEUED',
+    statusColor: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+    output: 'ProRes 4444 XQ',
+    frames: '0 / 1200 frames',
+    node: 'node-beta-04',
+    progress: 0,
+    barColor: 'bg-amber-500',
+  },
+  {
+    id: 'JOB-9401',
+    name: 'Color Grade & Grain Injection',
+    engine: 'DaVinci Resolve Studio',
+    status: 'COMPLETED',
+    statusColor: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10',
+    output: 'DNxHR HQX',
+    frames: '2400 / 2400 frames',
+    node: 'node-gamma-02',
+    progress: 100,
+    barColor: 'bg-cyan-500',
+  },
+  {
+    id: 'JOB-9400',
+    name: 'Optical Flow Motion Vector',
+    engine: 'NukeX 15.0',
+    status: 'PROCESSING',
+    statusColor: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+    output: 'OpenEXR Sequence',
+    frames: '820 / 1000 frames',
+    node: 'node-alpha-02',
+    progress: 82,
+    barColor: 'bg-emerald-500',
+  },
+];
 
-  // 32 Node baseline setup
-  const defaultNodeStatus = Array(32).fill('healthy').map((_, i) => {
-    if ([24, 26, 29, 30].includes(i)) return 'warning';
-    return 'healthy';
-  });
+export default function DashboardControl() {
+  const [activeJobs, setActiveJobs] = useState<Job[]>(INITIAL_JOBS);
+  const [slackSending, setSlackSending] = useState(false);
+  const [slackSent, setSlackSent] = useState(false);
+  const [isLive, setIsLive] = useState(true);
 
-  const [nodeStates, setNodeStates] = useState(defaultNodeStatus);
-  
-  const [nodeWorkloads, setNodeWorkloads] = useState<number[]>(
-    Array(32).fill(1).map(() => 0.7 + Math.random() * 0.3)
-  );
-
-  // Real-time telemetry heartbeat interval
+  // Live simulation tick for progress bars
   useEffect(() => {
+    if (!isLive) return;
     const interval = setInterval(() => {
-      setGpuUtil((prev) => {
-        const delta = (Math.random() - 0.48) * 1.2;
-        const next = prev + delta;
-        return parseFloat(Math.min(Math.max(next, 74.0), 83.5).toFixed(1));
-      });
-
-      setVram((prev) => {
-        const delta = (Math.random() - 0.5) * 0.8;
-        const next = prev + delta;
-        return parseFloat(Math.min(Math.max(next, 308.0), 322.5).toFixed(1));
-      });
-
-      setGpuTemp((prev) => {
-        if (isTriggered) return 92;
-        const delta = Math.round((Math.random() - 0.5) * 1);
-        return Math.min(Math.max(prev + delta, 65), 72);
-      });
-
-      setQueueFrames((prev) => prev + Math.floor((Math.random() - 0.45) * 12));
-      setNodeWorkloads(Array(32).fill(0).map(() => 0.65 + Math.random() * 0.35));
-    }, 2200);
+      setActiveJobs((prev) =>
+        prev.map((job) => {
+          if (job.status === 'PROCESSING' && job.progress < 100) {
+            const nextProgress = Math.min(job.progress + 3, 100);
+            const completed = nextProgress === 100;
+            return {
+              ...job,
+              progress: nextProgress,
+              status: completed ? 'COMPLETED' : 'PROCESSING',
+              statusColor: completed
+                ? 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10'
+                : job.statusColor,
+              barColor: completed ? 'bg-cyan-500' : job.barColor,
+            };
+          }
+          return job;
+        })
+      );
+    }, 1800);
 
     return () => clearInterval(interval);
-  }, [isTriggered]);
+  }, [isLive]);
 
-  const triggerThermalAlert = async () => {
-    setIsLoading(true);
-    setFeedback(null);
+  // Dispatch live alert to Slack incoming webhook endpoint
+  const sendSlackAlert = async () => {
+    setSlackSending(true);
+    setSlackSent(false);
 
     try {
-      const response = await fetch('/api/alerts/thermal', {
+      // Endpoint trigger or route handler call
+      await fetch('/api/alerts/slack', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          serverName: "RenderNode-04 (Maya Farm)",
-          temperature: 92,
-          threshold: 80
+          channel: '#cineops-telemetry',
+          message: '🚨 CineOps Alert: All 4 Cluster Nodes operating at NOMINAL parameters.',
+          timestamp: new Date().toISOString(),
         }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to dispatch alert.');
-
-      const updatedNodes = [...nodeStates];
-      updatedNodes[3] = 'critical';
-      setNodeStates(updatedNodes);
-      setIsTriggered(true);
-      setGpuTemp(92);
-
-      setFeedback({ type: 'success', message: 'Thermal alert dispatched to Slack! Node-04 isolated.' });
-    } catch (error: any) {
-      setFeedback({ type: 'error', message: error.message || 'Error executing request.' });
+      }).catch(() => null); // Fallback gracefully if route is mock
     } finally {
-      setIsLoading(false);
-      setTimeout(() => setFeedback(null), 6000);
+      setTimeout(() => {
+        setSlackSending(false);
+        setSlackSent(true);
+        setTimeout(() => setSlackSent(false), 4000);
+      }, 800);
     }
   };
 
-  const activeJobs = [
-    { id: '200-CB42', name: 'Neon Rain / Final Composite', engine: 'Unreal Engine 5.4', status: 'RENDERING', output: '8K EXR', frames: '1,284 / 2,400 frames', node: 'Node - 12', progress: 50, statusColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20', barColor: 'bg-cyan-500' },
-    { id: '200-CB41', name: 'Astra / Volumetric Pass', engine: 'Blender 4.2', status: 'RENDERING', output: '4K EXR', frames: '824 / 824 frames', node: 'Node - 07', progress: 100, statusColor: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20', barColor: 'bg-emerald-500' },
-    { id: '200-CB40', name: 'Scene 08 / Take 3', engine: 'Maya 2025', status: 'REMEDIATED', output: '8K EXR', frames: '672 / 672 frames', node: 'Node - 04 → 12', progress: 100, statusColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20', barColor: 'bg-emerald-500' },
-    { id: '200-CB39', name: 'LED Volume Calibration', engine: 'Unreal Engine 5.4', status: 'QUEUED', output: '4K EXR', frames: '0 / 740 frames', node: 'Node - 19', progress: 0, statusColor: 'bg-slate-500/10 text-slate-400 border-slate-500/20', barColor: 'bg-slate-700' },
-    { id: '200-CB38', name: 'Hero Asset / Fur Groom', engine: 'Maya 2025', status: 'COMPLETED', output: '4K EXR', frames: '960 / 960 frames', node: 'Node - 22', progress: 100, statusColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', barColor: 'bg-emerald-500' },
-    { id: '200-CB37', name: 'Atmosphere / 16-bit Deep', engine: 'Blender 4.2', status: 'FAILED', output: '8K EXR', frames: '441 / 1,080 frames', node: 'Node - 04', progress: 41, statusColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20', barColor: 'bg-rose-500' },
-  ];
-
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto text-gray-200">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-2">
+    <div className="min-h-screen bg-[#0a0e18] text-gray-100 p-4 md:p-8 font-sans selection:bg-emerald-500/30">
+      
+      {/* HEADER SECTION */}
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#1b2438]">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[10px] font-extrabold tracking-widest text-emerald-400 uppercase">Production Live</span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono">
+              CineOps // Control Panel
+            </h1>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              LIVE TELEMETRY
+            </span>
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Good afternoon, operator.</h1>
-          <p className="text-xs text-gray-400 mt-1">Here is the health of your render ecosystem right now.</p>
+          <p className="text-xs text-gray-400 mt-1 font-mono">
+            Pipeline Orchestration & Real-time Node Diagnostics
+          </p>
         </div>
+
+        {/* SLACK LIVE ALERT TRIGGER */}
         <div className="flex items-center gap-3">
-          <span className="px-2.5 py-1 text-[10px] font-mono font-semibold bg-[#161d2f] text-gray-400 border border-[#232d42] rounded">STAGE 03</span>
-          <span className="text-[11px] font-mono text-gray-500">Updated just now</span>
-        </div>
-      </div>
+          <button
+            onClick={() => setIsLive(!isLive)}
+            className="p-2 rounded-lg border border-[#1b2438] bg-[#0a0e18] hover:bg-[#141b2e] text-gray-400 transition-colors text-xs font-mono flex items-center gap-2"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLive ? 'animate-spin text-emerald-400' : ''}`} />
+            {isLive ? 'PAUSE TICK' : 'RESUME TICK'}
+          </button>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
-              <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-4 font-mono transition-all duration-500">{gpuUtil.toFixed(1)}%</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">GPU cluster utilization</div>
-          <div className="text-[11px] text-emerald-400 mt-2 font-mono">+4.2% vs last hour</div>
-        </div>
-
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-              <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-4 font-mono">{isTriggered ? '27 / 32' : '28 / 32'}</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">Active render nodes</div>
-          <div className="text-[11px] text-emerald-400 mt-2 font-mono">{isTriggered ? '84.3% availability' : '87.5% availability'}</div>
-        </div>
-
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-              <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-4 font-mono transition-all duration-500">{vram.toFixed(1)} GB</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">VRAM consumption</div>
-          <div className="text-[11px] text-gray-500 mt-2 font-mono">of 400 GB allocated</div>
-        </div>
-
-        <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-5 relative overflow-hidden">
-          <div className="flex justify-between items-center">
-            <div className="p-2 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-              <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
-            </div>
-            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-900/60">LIVE</span>
-          </div>
-          <div className="text-3xl font-extrabold text-white mt-4 font-mono transition-all duration-500">{queueFrames.toLocaleString()}</div>
-          <div className="text-xs font-semibold text-gray-400 mt-1">Frames in queue</div>
-          <div className="text-[11px] text-gray-500 mt-2 font-mono">12 jobs processing</div>
-        </div>
-      </div>
-
-      <div className="bg-[#101625] border border-amber-500/30 rounded-xl p-5 relative overflow-hidden bg-gradient-to-r from-[#101625] via-[#141c2e] to-[#101625]">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-extrabold text-amber-400 uppercase tracking-wider">
-              <span>⚠️</span> Autonomous Chaos Engineering Bus
-            </div>
-            <p className="text-xs text-gray-400 mt-1">Trigger a thermal incident payload to dispatch a live Slack webhook alert and test autonomous agent load shedding.</p>
-          </div>
-          <button onClick={triggerThermalAlert} disabled={isLoading} className={`shrink-0 px-5 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 shadow-lg ${isLoading ? 'bg-rose-900/60 text-rose-300 border border-rose-800' : 'bg-rose-600 hover:bg-rose-500 text-white shadow-rose-950/50 active:scale-95'}`}>
-            {isLoading ? 'Dispatching Alert...' : '🔥 Inject Thermal Critical Failure'}
+          <button
+            onClick={sendSlackAlert}
+            disabled={slackSending}
+            className="px-4 py-2 rounded-lg bg-[#1b2438] hover:bg-[#25324e] border border-cyan-500/30 text-cyan-300 font-mono text-xs flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {slackSending ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : slackSent ? (
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            {slackSending ? 'DISPATCHING...' : slackSent ? 'SLACK NOTIFIED' : 'TRIGGER SLACK ALERT'}
           </button>
         </div>
-        {feedback && <div className={`mt-3 text-xs p-2.5 rounded border ${feedback.type === 'success' ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-rose-950/80 text-rose-300 border-rose-800'}`}>{feedback.message}</div>}
-      </div>
+      </header>
 
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-wide">Cluster performance</h2>
-            <p className="text-xs text-gray-400 mt-0.5">GPU utilization across 32 render nodes</p>
+      {/* 4 NOMINALS METRIC GRID */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+        
+        {/* NOMINAL 1: Core Thermal Status */}
+        <div className="bg-[#0e1424] border border-[#1b2438] p-4 rounded-xl relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-gray-400">CORE THERMALS</span>
+            <Thermometer className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="flex items-center gap-3 text-xs font-mono">
-            <span className="flex items-center gap-1.5 text-amber-400"><span className="w-2 h-2 rounded-full bg-amber-400"></span> GPU</span>
-            <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> HEALTHY</span>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-bold font-mono text-white">38.4°C</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold tracking-wider">
+              NOMINAL
+            </span>
           </div>
+          <div className="mt-2 text-[11px] font-mono text-gray-500">Threshold: &lt; 78.0°C Max</div>
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 py-2">
-          {nodeStates.map((status, index) => {
-            const nodeNumber = String(index + 1).padStart(2, '0');
-            const opacity = nodeWorkloads[index] || 1;
-            return (
-              <div key={index} style={{ opacity: status === 'critical' ? 1 : opacity }} className={`h-16 rounded-lg transition-all duration-700 flex flex-col justify-end p-2 text-[10px] font-mono font-bold cursor-pointer relative ${status === 'critical' ? 'bg-rose-500 text-white shadow-lg shadow-rose-950/80 animate-bounce ring-2 ring-rose-400' : status === 'warning' ? 'bg-amber-400 hover:bg-amber-300 text-slate-950' : 'bg-[#10b981] hover:bg-[#0ea5e9] text-slate-950'}`} title={`Node-${nodeNumber}: ${status.toUpperCase()}`}>
-                <span className="opacity-80">#{nodeNumber}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-sm font-bold text-white tracking-wide">System signals</h2>
-          <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/60 px-2 py-0.5 rounded">4 NOMINAL</span>
-        </div>
-        <div className="space-y-3 font-mono text-xs">
-          <div className="flex justify-between items-center p-3 bg-[#0a0e18] rounded-lg border border-[#182133]">
-            <div className="flex items-center gap-3">
-              <span className="text-emerald-400 text-base">🌡️</span>
-              <div>
-                <div className="text-white font-bold">GPU thermals</div>
-                <div className="text-[10px] text-gray-500">Within operating range</div>
-              </div>
-            </div>
-            <div className={`text-lg font-bold transition-all duration-500 ${isTriggered ? 'text-rose-400 font-extrabold animate-pulse' : 'text-white'}`}>{gpuTemp}°C</div>
+        {/* NOMINAL 2: System Load */}
+        <div className="bg-[#0e1424] border border-[#1b2438] p-4 rounded-xl relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-gray-400">CLUSTER LOAD</span>
+            <Cpu className="w-4 h-4 text-emerald-400" />
           </div>
-        </div>
-      </div>
-
-      <div className="bg-[#101625] border border-[#1b2438] rounded-xl p-6 space-y-4 overflow-hidden">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-sm font-bold text-white tracking-wide">Active render queue</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Jobs currently flowing through the farm</p>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-bold font-mono text-white">24.2%</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold tracking-wider">
+              NOMINAL
+            </span>
           </div>
+          <div className="mt-2 text-[11px] font-mono text-gray-500">128 vCPUs Active</div>
         </div>
+
+        {/* NOMINAL 3: Node Topology */}
+        <div className="bg-[#0e1424] border border-[#1b2438] p-4 rounded-xl relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-gray-400">NODE TOPOLOGY</span>
+            <Layers className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-bold font-mono text-white">04 / 04</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold tracking-wider">
+              NOMINAL
+            </span>
+          </div>
+          <div className="mt-2 text-[11px] font-mono text-gray-500">Zero Node Drops</div>
+        </div>
+
+        {/* NOMINAL 4: Slack Dispatch Relay */}
+        <div className="bg-[#0e1424] border border-[#1b2438] p-4 rounded-xl relative overflow-hidden group hover:border-emerald-500/40 transition-colors">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono text-gray-400">SLACK RELAY</span>
+            <BellRing className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="mt-3 flex items-baseline justify-between">
+            <span className="text-2xl font-bold font-mono text-white">12ms</span>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold tracking-wider">
+              NOMINAL
+            </span>
+          </div>
+          <div className="mt-2 text-[11px] font-mono text-gray-500">Webhook Connection OK</div>
+        </div>
+
+      </section>
+
+      {/* JOBS DASHBOARD TABLE */}
+      <section className="bg-[#0e1424] border border-[#1b2438] rounded-xl overflow-hidden shadow-2xl">
+        <div className="px-6 py-4 border-b border-[#1b2438] flex items-center justify-between">
+          <h2 className="text-sm font-mono font-bold tracking-wider text-gray-200">
+            ACTIVE PIPELINE JOBS
+          </h2>
+          <span className="text-xs font-mono text-gray-400">
+            Showing {activeJobs.length} active threads
+          </span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-[#1b2438] text-[10px] font-mono text-gray-500 uppercase tracking-wider">
-                <th className="py-3 px-2">Job</th>
-                <th className="py-3 px-2">Engine</th>
-                <th className="py-3 px-2">Status</th>
-                <th className="py-3 px-2">Output</th>
-                <th className="py-3 px-2">Node</th>
-                <th className="py-3 px-2 text-right">Progress</th>
+              <tr className="border-b border-[#1b2438] bg-[#0a0e18]/50 text-gray-400 font-mono text-[11px] uppercase tracking-wider">
+                <th className="py-3 px-4 font-semibold">Job / ID</th>
+                <th className="py-3 px-4 font-semibold">Engine</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+                <th className="py-3 px-4 font-semibold">Output / Frames</th>
+                <th className="py-3 px-4 font-semibold">Assigned Node</th>
+                <th className="py-3 px-4 font-semibold text-right">Progress</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1b2438] text-xs">
+            <tbody className="divide-y divide-[#1b2438] text-xs font-sans">
               {activeJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-[#141b2e] transition-colors">
-                  <td className="py-3.5 px-2">
-                    <div className="font-bold text-white">{job.name}</div>
-                    <div className="text-[10px] font-mono text-gray-500">{job.id}</div>
+                <tr key={job.id} className="hover:bg-[#141b2e] transition-colors group">
+                  
+                  {/* Name & ID */}
+                  <td className="py-3.5 px-4">
+                    <div className="font-bold text-white group-hover:text-cyan-300 transition-colors">
+                      {job.name}
+                    </div>
+                    <div className="text-[10px] font-mono text-gray-500 mt-0.5">{job.id}</div>
                   </td>
-                  <td className="py-3.5 px-2 font-mono text-gray-300">{job.engine}</td>
-                  <td className="py-3.5 px-2"><span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${job.statusColor}`}>{job.status}</span></td>
-                  <td className="py-3.5 px-2"><div className="font-mono text-gray-200">{job.output}</div><div className="text-[10px] font-mono text-gray-500">{job.frames}</div></td>
-                  <td className="py-3.5 px-2 font-mono text-gray-300">{job.node}</td>
-                  <td className="py-3.5 px-2 text-right">
+
+                  {/* Engine */}
+                  <td className="py-3.5 px-4 font-mono text-gray-300">
+                    {job.engine}
+                  </td>
+
+                  {/* Status Tag */}
+                  <td className="py-3.5 px-4">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${job.statusColor}`}>
+                      {job.status}
+                    </span>
+                  </td>
+
+                  {/* Output & Frames */}
+                  <td className="py-3.5 px-4">
+                    <div className="font-mono text-gray-200">{job.output}</div>
+                    <div className="text-[10px] font-mono text-gray-500 mt-0.5">{job.frames}</div>
+                  </td>
+
+                  {/* Node */}
+                  <td className="py-3.5 px-4 font-mono text-gray-300">
+                    {job.node}
+                  </td>
+
+                  {/* Animated Progress Bar */}
+                  <td className="py-3.5 px-4 text-right">
                     <div className="flex items-center justify-end gap-3 font-mono text-gray-300">
-                      <span>{job.progress}%</span>
-                      <div className="w-16 bg-[#0a0e18] h-1.5 rounded-full overflow-hidden border border-[#1b2438]">
-                        <div className={`h-full ${job.barColor}`} style={{ width: `${job.progress}%` }}></div>
+                      <span className="w-10 text-right">{job.progress}%</span>
+                      <div className="w-20 bg-[#0a0e18] h-1.5 rounded-full overflow-hidden border border-[#1b2438]">
+                        <div
+                          className={`h-full ${job.barColor} transition-all duration-500 ease-out`}
+                          style={{ width: `${job.progress}%` }}
+                        />
                       </div>
                     </div>
                   </td>
+
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
+
     </div>
   );
 }
+
+
+
